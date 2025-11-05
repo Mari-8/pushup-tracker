@@ -15,13 +15,23 @@ export interface Pushup {
 
 export async function initDatabase() {
   try {
-    // Check if POSTGRES_URL is set
-    if (!process.env.POSTGRES_URL) {
+    // Check for POSTGRES_URL (support both prefixed and non-prefixed versions)
+    // Vercel sometimes prefixes environment variables with project name
+    const postgresUrl = process.env.pushup_tracker_POSTGRES_URL || 
+                       process.env.PUSHUP_TRACKER_POSTGRES_URL ||
+                       process.env.POSTGRES_URL;
+    
+    if (!postgresUrl) {
       const error = new Error(
-        'Missing POSTGRES_URL environment variable. Please create a .env.local file with your Vercel Postgres connection strings. See SETUP.md for instructions.'
+        'Missing POSTGRES_URL environment variable. For local development, create a .env.local file. For Vercel deployment, add POSTGRES_URL (or pushup_tracker_POSTGRES_URL) in Vercel dashboard Settings → Environment Variables. See SETUP.md for instructions.'
       );
       (error as any).code = 'missing_connection_string';
       throw error;
+    }
+    
+    // Set the environment variable so @vercel/postgres can use it
+    if (!process.env.POSTGRES_URL && postgresUrl) {
+      process.env.POSTGRES_URL = postgresUrl;
     }
 
     // Create users table

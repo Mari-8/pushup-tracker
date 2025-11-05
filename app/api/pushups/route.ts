@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getPushups, createPushup, getUserStats, initDatabase } from '@/lib/db';
+import { getDatabaseErrorMessage } from '@/lib/errors';
 
 export async function GET() {
   try {
@@ -11,7 +12,7 @@ export async function GET() {
     if (error?.code === 'missing_connection_string') {
       return NextResponse.json(
         { 
-          error: 'Database connection missing. Please create a .env.local file with your Vercel Postgres connection strings. See SETUP.md for instructions.',
+          error: getDatabaseErrorMessage(),
           code: 'missing_connection_string'
         },
         { status: 500 }
@@ -69,7 +70,7 @@ export async function POST(request: NextRequest) {
     if (error?.code === 'missing_connection_string') {
       return NextResponse.json(
         { 
-          error: 'Database connection missing. Please create a .env.local file with your Vercel Postgres connection strings. See SETUP.md for instructions.',
+          error: getDatabaseErrorMessage(),
           code: 'missing_connection_string'
         },
         { status: 500 }
