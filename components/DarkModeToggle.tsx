@@ -5,11 +5,22 @@ import { useDarkMode } from './DarkModeProvider';
 export default function DarkModeToggle() {
   const { isDark, toggleDarkMode } = useDarkMode();
 
+  const handleClick = () => {
+    console.log('Dark mode toggle clicked, current state:', isDark);
+    toggleDarkMode();
+    console.log('Dark mode toggled, new state should be:', !isDark);
+    // Check if class was applied
+    setTimeout(() => {
+      console.log('HTML element has dark class:', document.documentElement.classList.contains('dark'));
+    }, 100);
+  };
+
   return (
     <button
-      onClick={toggleDarkMode}
+      onClick={handleClick}
       className="p-2 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
       aria-label="Toggle dark mode"
+      type="button"
     >
       {isDark ? (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
