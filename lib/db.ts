@@ -193,26 +193,70 @@ export async function getTotalPushups(): Promise<number> {
   }
 }
 
+export interface DailyPushupUser {
+  user_id: string;
+  user_name: string;
+  count: number;
+}
+
 export interface DailyPushup {
   date: string;
   total: number;
+  users: DailyPushupUser[];
 }
 
 export async function getDailyPushups(): Promise<DailyPushup[]> {
   try {
+    // Get daily totals with user breakdown
     const result = await sql`
+      WITH daily_totals AS (
+        SELECT 
+          DATE(created_at)::text as date,
+          COALESCE(SUM(count), 0) as total
+        FROM pushups
+        WHERE created_at >= DATE_TRUNC('month', CURRENT_DATE)
+          AND created_at < DATE_TRUNC('month', CURRENT_DATE) + INTERVAL '1 month'
+        GROUP BY DATE(created_at)
+      ),
+      daily_by_user AS (
+        SELECT 
+          DATE(p.created_at)::text as date,
+          u.id as user_id,
+          u.name as user_name,
+          COALESCE(SUM(p.count), 0) as count
+        FROM pushups p
+        JOIN users u ON p.user_id = u.id
+        WHERE p.created_at >= DATE_TRUNC('month', CURRENT_DATE)
+          AND p.created_at < DATE_TRUNC('month', CURRENT_DATE) + INTERVAL '1 month'
+        GROUP BY DATE(p.created_at), u.id, u.name
+      )
       SELECT 
-        DATE(created_at)::text as date,
-        COALESCE(SUM(count), 0) as total
-      FROM pushups
-      WHERE created_at >= DATE_TRUNC('month', CURRENT_DATE)
-        AND created_at < DATE_TRUNC('month', CURRENT_DATE) + INTERVAL '1 month'
-      GROUP BY DATE(created_at)
-      ORDER BY date DESC;
+        dt.date,
+        dt.total,
+        COALESCE(
+          json_agg(
+            json_build_object(
+              'user_id', dbu.user_id::text,
+              'user_name', dbu.user_name,
+              'count', dbu.count
+            )
+            ORDER BY dbu.count DESC
+          ) FILTER (WHERE dbu.user_id IS NOT NULL),
+          '[]'::json
+        ) as users
+      FROM daily_totals dt
+      LEFT JOIN daily_by_user dbu ON dt.date = dbu.date
+      GROUP BY dt.date, dt.total
+      ORDER BY dt.date DESC;
     `;
     return result.rows.map(row => ({
-      date: String(row.date), // Ensure it's a string in YYYY-MM-DD format
+      date: String(row.date),
       total: parseInt(String(row.total)),
+      users: (row.users || []).map((u: any) => ({
+        user_id: String(u.user_id),
+        user_name: String(u.user_name),
+        count: parseInt(String(u.count)),
+      })),
     }));
   } catch (error) {
     console.error('Error fetching daily pushups:', error);

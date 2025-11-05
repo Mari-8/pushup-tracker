@@ -14,9 +14,16 @@ interface User {
   created_at: Date;
 }
 
+interface DailyPushupUser {
+  user_id: string;
+  user_name: string;
+  count: number;
+}
+
 interface DailyPushup {
   date: string;
   total: number;
+  users: DailyPushupUser[];
 }
 
 interface Stats {
