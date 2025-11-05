@@ -109,13 +109,27 @@ export async function getPushups(): Promise<Pushup[]> {
   }
 }
 
-export async function createPushup(userId: string, count: number): Promise<Pushup> {
+export async function createPushup(userId: string, count: number, date?: string): Promise<Pushup> {
   try {
-    const result = await sql`
-      INSERT INTO pushups (user_id, count)
-      VALUES (${parseInt(userId)}, ${count})
-      RETURNING id, user_id, count, created_at;
-    `;
+    let result;
+    if (date) {
+      // If date is provided, use it to set created_at
+      const dateObj = new Date(date);
+      // Set time to start of day in UTC to ensure consistent date storage
+      dateObj.setHours(12, 0, 0, 0); // Use noon to avoid timezone issues
+      result = await sql`
+        INSERT INTO pushups (user_id, count, created_at)
+        VALUES (${parseInt(userId)}, ${count}, ${dateObj.toISOString()})
+        RETURNING id, user_id, count, created_at;
+      `;
+    } else {
+      // If no date provided, use current timestamp
+      result = await sql`
+        INSERT INTO pushups (user_id, count)
+        VALUES (${parseInt(userId)}, ${count})
+        RETURNING id, user_id, count, created_at;
+      `;
+    }
     const row = result.rows[0];
     return {
       id: row.id.toString(),

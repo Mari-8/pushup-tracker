@@ -18,48 +18,53 @@ export default function DailyTracking({ dailyPushups }: DailyTrackingProps) {
     );
   }
 
-  // Get the most recent 7 days or all days if less than 7
-  const recentDays = dailyPushups.slice(0, 7);
-  const maxTotal = Math.max(...recentDays.map(d => d.total), 1);
+  // Show all days, but limit display to prevent overflow
+  const maxTotal = Math.max(...dailyPushups.map(d => d.total), 1);
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
+    const date = new Date(dateString + 'T00:00:00'); // Add time to avoid timezone issues
     const today = new Date();
+    today.setHours(0, 0, 0, 0);
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
 
-    if (date.toDateString() === today.toDateString()) {
+    const dateOnly = new Date(date);
+    dateOnly.setHours(0, 0, 0, 0);
+
+    if (dateOnly.getTime() === today.getTime()) {
       return 'Today';
-    } else if (date.toDateString() === yesterday.toDateString()) {
+    } else if (dateOnly.getTime() === yesterday.getTime()) {
       return 'Yesterday';
     } else {
-      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      return dateOnly.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     }
   };
 
   return (
     <div className="space-y-3">
       <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">
-        Last 7 Days
+        November 2024
       </h3>
-      {recentDays.map(({ date, total }) => (
-        <div key={date} className="space-y-1">
-          <div className="flex justify-between items-center text-sm">
-            <span className="text-gray-700 dark:text-gray-300 font-medium">
-              {formatDate(date)}
-            </span>
-            <span className="text-gray-900 dark:text-gray-100 font-bold">
-              {total.toLocaleString()} pushups
-            </span>
+      <div className="max-h-96 overflow-y-auto space-y-2 pr-2">
+        {dailyPushups.map(({ date, total }) => (
+          <div key={date} className="space-y-1">
+            <div className="flex justify-between items-center text-sm">
+              <span className="text-gray-700 dark:text-gray-300 font-medium">
+                {formatDate(date)}
+              </span>
+              <span className="text-gray-900 dark:text-gray-100 font-bold">
+                {total.toLocaleString()} pushups
+              </span>
+            </div>
+            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
+              <div
+                className="bg-gradient-to-r from-blue-500 to-blue-600 dark:from-blue-600 dark:to-blue-700 h-2 rounded-full transition-all duration-300"
+                style={{ width: `${(total / maxTotal) * 100}%` }}
+              />
+            </div>
           </div>
-          <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
-            <div
-              className="bg-gradient-to-r from-blue-500 to-blue-600 dark:from-blue-600 dark:to-blue-700 h-2 rounded-full transition-all duration-300"
-              style={{ width: `${(total / maxTotal) * 100}%` }}
-            />
-          </div>
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   );
 }

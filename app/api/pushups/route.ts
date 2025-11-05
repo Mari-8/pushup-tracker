@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
   try {
     await initDatabase();
     const body = await request.json();
-    const { user_id, count } = body;
+    const { user_id, count, date } = body;
 
     if (!user_id || typeof user_id !== 'string') {
       return NextResponse.json(
@@ -44,7 +44,25 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const pushup = await createPushup(user_id, count);
+    // Validate date if provided
+    if (date && typeof date === 'string') {
+      const dateObj = new Date(date);
+      if (isNaN(dateObj.getTime())) {
+        return NextResponse.json(
+          { error: 'Invalid date format' },
+          { status: 400 }
+        );
+      }
+      // Don't allow future dates
+      if (dateObj > new Date()) {
+        return NextResponse.json(
+          { error: 'Cannot log pushups for future dates' },
+          { status: 400 }
+        );
+      }
+    }
+
+    const pushup = await createPushup(user_id, count, date);
     return NextResponse.json(pushup, { status: 201 });
   } catch (error: any) {
     console.error('Error creating pushup:', error);
