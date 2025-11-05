@@ -202,7 +202,7 @@ export async function getDailyPushups(): Promise<DailyPushup[]> {
   try {
     const result = await sql`
       SELECT 
-        DATE(created_at) as date,
+        DATE(created_at)::text as date,
         COALESCE(SUM(count), 0) as total
       FROM pushups
       WHERE created_at >= DATE_TRUNC('month', CURRENT_DATE)
@@ -211,7 +211,7 @@ export async function getDailyPushups(): Promise<DailyPushup[]> {
       ORDER BY date DESC;
     `;
     return result.rows.map(row => ({
-      date: row.date,
+      date: String(row.date), // Ensure it's a string in YYYY-MM-DD format
       total: parseInt(String(row.total)),
     }));
   } catch (error) {

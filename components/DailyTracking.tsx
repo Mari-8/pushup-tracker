@@ -22,21 +22,43 @@ export default function DailyTracking({ dailyPushups }: DailyTrackingProps) {
   const maxTotal = Math.max(...dailyPushups.map(d => d.total), 1);
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString + 'T00:00:00'); // Add time to avoid timezone issues
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
+    try {
+      // Handle different date formats that might come from the database
+      let date: Date;
+      
+      // If it's already in YYYY-MM-DD format, parse it directly
+      if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+        const [year, month, day] = dateString.split('-').map(Number);
+        date = new Date(year, month - 1, day);
+      } else {
+        // Try parsing as-is
+        date = new Date(dateString);
+      }
+      
+      // Check if date is valid
+      if (isNaN(date.getTime())) {
+        console.warn('Invalid date string:', dateString);
+        return dateString; // Return the original string if parsing fails
+      }
+      
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
 
-    const dateOnly = new Date(date);
-    dateOnly.setHours(0, 0, 0, 0);
+      const dateOnly = new Date(date);
+      dateOnly.setHours(0, 0, 0, 0);
 
-    if (dateOnly.getTime() === today.getTime()) {
-      return 'Today';
-    } else if (dateOnly.getTime() === yesterday.getTime()) {
-      return 'Yesterday';
-    } else {
-      return dateOnly.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      if (dateOnly.getTime() === today.getTime()) {
+        return 'Today';
+      } else if (dateOnly.getTime() === yesterday.getTime()) {
+        return 'Yesterday';
+      } else {
+        return dateOnly.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      }
+    } catch (error) {
+      console.error('Error formatting date:', dateString, error);
+      return dateString; // Fallback to original string
     }
   };
 
